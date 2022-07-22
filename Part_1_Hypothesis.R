@@ -1,5 +1,3 @@
-
-
 ## Set the working directory
 setwd("./")
 
@@ -10,7 +8,7 @@ GE_kirc.healthy <- read.table("./Project_Data/kirc-rsem-fpkm-tcga_paired.txt", h
 GE_lusc.cancer <- read.table("./Project_Data/lusc-rsem-fpkm-tcga-t_paired.txt", header = T, row.names=1)
 GE_lusc.healthy <- read.table("./Project_Data/lusc-rsem-fpkm-tcga_paired.txt", header = T, row.names=1)
 
-#First stage Kirc dataframes
+#1- First step clean Kirc dataframes
 
 ## Remove the Genes that have more than 50% of its samples as zeros either in healthy or Cancerous tissues.
 ## We have 68 patients ==> 50% of patients = 34 ==> If number of zeros in GE level of Healthy or Cancerous data > =35 ==> remove this Gene
@@ -56,7 +54,7 @@ for(Gene in rownames(GE_kirc.cancer.clean))
   GE_kirc.healthy.keyVal[[Gene]]<- GE_kirc.healthy.clean2
 }
 
-#Second stage Lusc dataframes 
+#2- Second step clean Lusc dataframes 
 
 ## Remove the Genes that have more than 50% of its samples as zeros either in healthy or Cancerous tissues.
 ## We have 50 patients ==> 50% of patients = 25 ==> If number of zeros in GE level of Healthy or Cancerous data > =35 ==> remove this Gene
@@ -99,4 +97,12 @@ for(Gene in rownames(GE_lusc.cancer.clean))
   GE_lusc.cancer.keyVal[[Gene]]<-GE_lusc.cancer.clean2
   GE_lusc.healthy.keyVal[[Gene]] <-GE_lusc.healthy.clean2
 }
+
+#3-hypothesis testing on each gene, expected output (pvalues and adjusted pvalues)
+
+#4-Fold change
+
+#5-Volcano plot
+
+#6-GSEA
 
