@@ -100,7 +100,49 @@ for(Gene in rownames(GE_lusc.cancer.clean))
 
 #3-hypothesis testing on each gene, expected output (pvalues and adjusted pvalues)
 
+
+
 #4-Fold change
+# useful resource: https://bioconductor.org/help/course-materials/2015/Uruguay2015/day5-data_analysis.html
+#A- lusc Data
+GE_lusc.cancer.keyVal.log=list()
+GE_lusc.healthy.keyVal.log=list()
+lusc_foldchange=list()
+for (gene in  names(GE_lusc.cancer.keyVal) )
+{
+  ##transform data into log2 base.
+  GE_lusc.cancer.keyVal.log= log2(GE_lusc.cancer.keyVal[[gene]])
+  GE_lusc.healthy.keyVal.log= log2(GE_lusc.healthy.keyVal[[gene]])
+  ##calculate the mean for each gene row per group
+  cancer = apply(GE_lusc.cancer.keyVal.log, 1, mean)
+  healthy = apply(GE_lusc.healthy.keyVal.log, 1, mean)
+  ##we can take the difference between the means.  And this is our log2 Fold Change or log2 Ratio == log2(control / test)
+  lusc_foldchange<- append(lusc_foldchange, as.numeric(healthy - cancer))
+}
+#B- kirc Data
+GE_kirc.cancer.keyVal.log=list()
+GE_kirc.healthy.keyVal.log=list()
+kirc_foldchange=list()
+for (gene in  names( GE_kirc.healthy.keyVal) )
+{
+  ##transform data into log2 base.
+  GE_kirc.cancer.keyVal.log= log2( GE_kirc.cancer.keyVal[[gene]])
+  GE_kirc.healthy.keyVal.log= log2( GE_kirc.healthy.keyVal[[gene]])
+  ##calculate the mean for each gene row per group
+  cancer = apply( GE_kirc.cancer.keyVal.log, 1, mean)
+  healthy = apply( GE_kirc.healthy.keyVal.log, 1, mean)
+  ##we can take the difference between the means.  And this is our log2 Fold Change or log2 Ratio == log2(control / test)
+  kirc_foldchange<- append(kirc_foldchange, as.numeric(healthy - cancer))
+}
+
+
+#draw hist for fold change
+##note: if "Error in plot.new():figure margins too large" appears solve it by expanding the plotting window
+hist(unlist(lusc_foldchange), xlab = "log2 Fold Change (healthy  vs cancer) lusc")
+hist(unlist(kirc_foldchange), xlab = "log2 Fold Change (healthy  vs cancer) kirc")
+
+
+
 
 #5-Volcano plot
 
