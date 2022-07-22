@@ -14,10 +14,10 @@ GE_kirc.cancer =GE_kirc.cancer [,-1]
 GE_kirc.healthy=GE_kirc.healthy[,-1]
 
 ## Remove the Genes that have more than 50% of its samples as zeros either in healthy or Cancerous tissues.
-## We have 68 patients ==> 50% of patients = 34 ==> If number of zeros in GE level of Healthy or Cancerous data > =35 ==> remove this Gene
-## skip the Gene index if the GE levels for this Gene in Cancerous tissues are more than 50% zeros ==> 35 or more patient
+## We have 68 patients ==> 50% of patients = 34 ==> If number of zeros in GE level of Healthy or Cancerous data > =34 ==> remove this Gene
+## skip the Gene index if the GE levels for this Gene in Cancerous tissues are more than 50% zeros ==> 34 or more patient
 index_cancer = which(apply(GE_kirc.cancer == 0, 1, sum) >=34)
-## skip the Gene index if the GE levels for this Gene in Healthy tissues are more than 50% zeros ==> 35 or more patient
+## skip the Gene index if the GE levels for this Gene in Healthy tissues are more than 50% zeros ==> 34 or more patient
 index_healthy = which(apply(GE_kirc.healthy == 0, 1, sum) >=34)
 
 ## Here are the unique indices for Genes that need to be skipped
