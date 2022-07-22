@@ -8,7 +8,7 @@ GE_kirc.healthy <- read.table("./Project_Data/kirc-rsem-fpkm-tcga_paired.txt", h
 GE_lusc.cancer <- read.table("./Project_Data/lusc-rsem-fpkm-tcga-t_paired.txt", header = T, row.names=1)
 GE_lusc.healthy <- read.table("./Project_Data/lusc-rsem-fpkm-tcga_paired.txt", header = T, row.names=1)
 
-#1- First step clean Kirc dataframes
+#1- clean Kirc dataframes
 
 ## Remove the Genes that have more than 50% of its samples as zeros either in healthy or Cancerous tissues.
 ## We have 68 patients ==> 50% of patients = 34 ==> If number of zeros in GE level of Healthy or Cancerous data > =35 ==> remove this Gene
@@ -24,7 +24,7 @@ skip_index = unique(c(index_cancer, index_healthy))
 GE_kirc.cancer.clean = GE_kirc.cancer[-skip_index,]
 GE_kirc.healthy.clean = GE_kirc.healthy[-skip_index,]
 
-#initialize clean gene list with key value pair 
+#initialize clean gene list of key value pair 
 GE_kirc.cancer.keyVal <- list()
 GE_kirc.healthy.keyVal<- list()
 for(Gene in rownames(GE_kirc.cancer.clean))
@@ -54,7 +54,7 @@ for(Gene in rownames(GE_kirc.cancer.clean))
   GE_kirc.healthy.keyVal[[Gene]]<- GE_kirc.healthy.clean2
 }
 
-#2- Second step clean Lusc dataframes 
+#2- clean Lusc dataframes 
 
 ## Remove the Genes that have more than 50% of its samples as zeros either in healthy or Cancerous tissues.
 ## We have 50 patients ==> 50% of patients = 25 ==> If number of zeros in GE level of Healthy or Cancerous data > =35 ==> remove this Gene
@@ -70,7 +70,7 @@ skip_index = unique(c(index_cancer, index_healthy))
 GE_lusc.cancer.clean = GE_lusc.cancer[-skip_index,]
 GE_lusc.healthy.clean = GE_lusc.healthy[-skip_index,]
 
-#initialize clean gene list with key value pair 
+#initialize clean gene list of key value pair 
 GE_lusc.cancer.keyVal <- list()
 GE_lusc.healthy.keyVal<- list()
 for(Gene in rownames(GE_lusc.cancer.clean))
