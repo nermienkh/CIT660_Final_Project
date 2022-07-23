@@ -1,12 +1,17 @@
 ## Set the working directory
 setwd("./")
 
-## Read the Gene Expressions of Cancerous Tissues in a dataframe
+## Read the Gene Expressions of Cancerous and Healthy Tissues in a dataframe
 GE_kirc.cancer <- read.table("./Project_Data/kirc-rsem-fpkm-tcga-t_paired.txt", header = T, row.names=1)
 GE_kirc.healthy <- read.table("./Project_Data/kirc-rsem-fpkm-tcga_paired.txt", header = T, row.names=1)
 
 GE_lusc.cancer <- read.table("./Project_Data/lusc-rsem-fpkm-tcga-t_paired.txt", header = T, row.names=1)
 GE_lusc.healthy <- read.table("./Project_Data/lusc-rsem-fpkm-tcga_paired.txt", header = T, row.names=1)
+
+## Read the Copy Number Alterations (CNAs) Cancerous Samples in a dataframe
+kirc_CNV <- read.table("./Project_Data/kirc_CNV_core.txt", header = T, row.names=1)
+lusc_CNV <- read.table("./Project_Data/lusc_CNV_core.txt", header = T, row.names=1)
+
 
 #1- clean Kirc dataframes
 ##Remove the first column from data farmes
