@@ -16,7 +16,7 @@ GE_kirc.healthy=GE_kirc.healthy[,-1]
 ## Remove the Genes that have more than 50% of its samples as zeros either in healthy or Cancerous tissues.
 ## We have 68 patients ==> 50% of patients = 34 ==> If number of zeros in GE level of Healthy or Cancerous data > =34 ==> remove this Gene
 ## skip the Gene index if the GE levels for this Gene in Cancerous tissues are more than 50% zeros ==> 34 or more patient
-index_cancer = which(apply(GE_kirc.cancer == 0, 1, sum) >=34)
+index_cancer = which(apply(GE_kirc.cancer == 0, 1, sum) >=34 )
 ## skip the Gene index if the GE levels for this Gene in Healthy tissues are more than 50% zeros ==> 34 or more patient
 index_healthy = which(apply(GE_kirc.healthy == 0, 1, sum) >=34)
 
@@ -106,7 +106,58 @@ for(Gene in rownames(GE_lusc.cancer.clean))
   GE_lusc.healthy.keyVal[[Gene]] <-GE_lusc.healthy.clean2
 }
 
+
+
+
 #3-hypothesis testing on each gene, expected output (pvalues and adjusted pvalues)
+source("Functions.R")
+#A- Paired  Test 
+normalityCheck_GE_kirc_Paired=CheckNormality50PercentOfGroups(TRUE ,GE_kirc.cancer.keyVal, GE_kirc.healthy.keyVal,0.05)
+normalityCheck_GE_lusc_Paired=CheckNormality50PercentOfGroups(TRUE ,GE_lusc.cancer.keyVal, GE_lusc.healthy.keyVal,0.05)
+## since  more than 50% of data are not normally distributed, we  will use Wilcoxon signed rank test. Paired = True
+#A kirc test
+kirc_Paired_pvalues=list()
+for (gene in  names(GE_kirc.cancer.keyVal))
+{
+ result= wilcox.test( unlist(GE_kirc.cancer.keyVal[[gene]]),unlist(GE_kirc.healthy.keyVal[[gene]]), alternative = 'two.sided', paired = TRUE)
+ kirc_Paired_pvalues[gene]=result$p.value
+}
+
+#A lusc test
+lusc_Paired_pvalues=list()
+for (gene in  names(GE_lusc.cancer.keyVal))
+{
+  result= wilcox.test(unlist(GE_lusc.cancer.keyVal[[gene]]),unlist(GE_lusc.healthy.keyVal[[gene]]), alternative = 'two.sided', paired = TRUE)
+  lusc_Paired_pvalues[gene]=result$p.value
+}
+#sorting pvalues  
+kirc_Paired_pvalues.sorted=sort(unlist(lusc_Paired_pvalues), decreasing=FALSE)
+lusc_Paired_pvalues.sorted=sort(unlist(lusc_Paired_pvalues), decreasing=FALSE)
+
+#B- independent Test
+normalityCheck_GE_kirc_independent=CheckNormality50PercentOfGroups(FALSE ,GE_kirc.cancer.keyVal, GE_kirc.healthy.keyVal,0.05)
+normalityCheck_GE_lusc_independent=CheckNormality50PercentOfGroups(FALSE,GE_lusc.cancer.keyVal, GE_lusc.healthy.keyVal,0.05)
+#since  more than 50% of data are not normally distributed, we  will us Wilcoxon rank sum test Paired=False
+#B kirc test
+kirc_independent_pvalues=list()
+for (gene in  names(GE_kirc.cancer.keyVal))
+{
+  result= wilcox.test( unlist(GE_kirc.cancer.keyVal[[gene]]),unlist(GE_kirc.healthy.keyVal[[gene]]), alternative = 'two.sided')
+  kirc_independent_pvalues[gene]=result$p.value
+}
+
+#B lusc test
+lusc_independent_pvalues=list()
+for (gene in  names(GE_lusc.cancer.keyVal))
+{
+  result= wilcox.test(unlist(GE_lusc.cancer.keyVal[[gene]]),unlist(GE_lusc.healthy.keyVal[[gene]]), alternative = 'two.sided')
+  lusc_independent_pvalues[gene]=result$p.value
+}
+  
+#sorting pvalues  
+kirc_independent_pvalues.sorted=sort(unlist(lusc_independent_pvalues), decreasing=FALSE)
+lusc_independent_pvalues.sorted=sort(unlist(lusc_independent_pvalues), decreasing=FALSE)
+
 
 
 
