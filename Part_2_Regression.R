@@ -35,3 +35,45 @@ extract_gene_CNA_df <- function (gene_cancer_profile, CNA_data){
   return(return_list)
 }
 
+gene_CNA_regression <- function(gene_CNA_df , gene_name ){
+  
+  # extract the CNA columns as a matrix
+  x = data.matrix(gene_CNA$df[,-1])
+
+  # get the vectors of y
+  y = gene_CNA_df[[gene_name]]
+  
+  # use a feature selection technique to penalize features: using LASSO
+  library(glmnet)
+  # get the lambda by the cross validation technique
+  fit.cv <- cv.glmnet(x, y , family = "gaussian" , alpha = 1, standardize = FALSE , nfolds = 10 )
+  lambda <- fit.cv$lambda.min
+  cat("lambda = " , lambda , "
+      ")
+  
+  # change lambda because generated lambda is not working well
+  lambda = 0.05
+  
+  # calculate the linear regression relation between y and x1
+  model <- glmnet(x,y, family = "gaussian", alpha =1 , lambda = lambda , standardize = FALSE)
+  
+  # print the linear regression relation summary
+  print(summary(model))
+  
+  
+  coef.fit <- coef(model, s = lambda)[2:114]
+  print(coef.fit)
+  
+  features.in <- which(abs(coef.fit) > 0 )
+  print(features.in)
+  
+  x = x[, features.in]
+  
+  relation <- lm(y~x)
+  print(summary(relation))
+  
+  # plot the vectors points with the regression line
+  # plot(x,y , col="blue", main = "Gene and CNA regression", abline(model),
+       # cex = 1.3,pch = 16,xlab = "CNA",ylab = "Gene Expression Level")
+  
+}
