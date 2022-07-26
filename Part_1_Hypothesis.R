@@ -1,158 +1,108 @@
 ## Set the working directory
-setwd("./")
+setwd("C:/Users/SaraNoeman/Documents/NU_MSC_Informatics/Courses/CIT660_Statistical_Analysis_Visualization/Project/CIT660_Final_Project/")
 
-## Read the Gene Expressions of Cancerous Tissues in a dataframe
-GE_kirc.cancer <- read.table("./Project_Data/kirc-rsem-fpkm-tcga-t_paired.txt", header = T, row.names=1)
-GE_kirc.healthy <- read.table("./Project_Data/kirc-rsem-fpkm-tcga_paired.txt", header = T, row.names=1)
+source("Cleanse_function.R")
 
-GE_lusc.cancer <- read.table("./Project_Data/lusc-rsem-fpkm-tcga-t_paired.txt", header = T, row.names=1)
-GE_lusc.healthy <- read.table("./Project_Data/lusc-rsem-fpkm-tcga_paired.txt", header = T, row.names=1)
+cancer_list = c("lusc")
 
-#1- clean Kirc dataframes
-##Remove the first column from data farmes
-GE_kirc.cancer =GE_kirc.cancer [,-1]
-GE_kirc.healthy=GE_kirc.healthy[,-1]
-
-## Remove the Genes that have more than 50% of its samples as zeros either in healthy or Cancerous tissues.
-## We have 68 patients ==> 50% of patients = 34 ==> If number of zeros in GE level of Healthy or Cancerous data > =35 ==> remove this Gene
-## skip the Gene index if the GE levels for this Gene in Cancerous tissues are more than 50% zeros ==> 35 or more patient
-index_cancer = which(apply(GE_kirc.cancer == 0, 1, sum) >=34)
-## skip the Gene index if the GE levels for this Gene in Healthy tissues are more than 50% zeros ==> 35 or more patient
-index_healthy = which(apply(GE_kirc.healthy == 0, 1, sum) >=34)
-
-## Here are the unique indices for Genes that need to be skipped
-skip_index = unique(c(index_cancer, index_healthy))
-
-## Remove Genes from both Healthy and Cancerous tissues GE levels. 
-GE_kirc.cancer.clean = GE_kirc.cancer[-skip_index,]
-GE_kirc.healthy.clean = GE_kirc.healthy[-skip_index,]
-
-#initialize clean gene list of key value pair 
-GE_kirc.cancer.keyVal <- list()
-GE_kirc.healthy.keyVal<- list()
-for(Gene in rownames(GE_kirc.cancer.clean))
+for (cancer_type in cancer_list)
 {
-  GE_kirc.cancer.clean2 = GE_kirc.cancer.clean[Gene,]
-  GE_kirc.healthy.clean2 = GE_kirc.healthy.clean[Gene,]
-  ## index of patients with GE level of healthy tissues = 0
-  patient_index1 = which(GE_kirc.healthy.clean[Gene,]==0)
-  ## index of patients with GE level of Cancerous tissues = 0
-  patient_index2 = which(GE_kirc.cancer.clean[Gene,]==0)
   
-  #combine patient_index1, patient_index2 to skip them
-  skip_patient_index = unique(c(patient_index1, patient_index2))
-  if (length(skip_patient_index)!=0)
+  print(cancer_type)
+  GE_cancer.filename = paste("./Project_Data/", cancer_type, "-rsem-fpkm-tcga-t_paired.txt", sep = "")
+  GE_healthy.filename = paste("./Project_Data/", cancer_type, "-rsem-fpkm-tcga_paired.txt", sep = "")
+  
+  CNA.filename = paste("./Project_Data/", cancer_type, "_CNV_core.txt", sep = "")
+  
+  ## Read the Gene Expressions of Cancerous and Healthy Tissues in a dataframe
+  GE.cancer <- read.table(GE_cancer.filename, header = T, row.names=1)
+  GE.healthy <- read.table(GE_healthy.filename, header = T, row.names=1)
+  
+  
+  ## Read the Copy Number Alterations (CNAs) Cancerous Samples in a dataframe
+  CNA <- read.table(CNA.filename, header = T, row.names=1)
+  
+  ## Run the data cleansing function
+  ## cleanse() function is responsible for the following:
+  ## 1) Removing any Gene who has more than 50% of its samples with zero values (from both GE.cancer and GE.healthy)
+  ## 2) For each Gene, check if there are patient samples with zero values, then remove this patient sample from both GE.cancer and GE.healthy for this Gene only.
+  ## The function return a list containing GE.cancer.clean and GE.healthy.clean.
+  GE_cleansed_data = cleanse(GE.cancer, GE.healthy)
+  GE.cancer.clean = GE_cleansed_data[[1]]
+  GE.healthy.clean = GE_cleansed_data[[2]]
+  
+  
+  
+
+  # 3-hypothesis testing on each gene, expected output (pvalues and adjusted pvalues)
+  
+  # Paired Test:
+  Is_paired = TRUE
+  pvalues_paired = Run_Hypothesis_Test(GE.cancer.clean, GE.healthy.clean, 0.05, Is_paired)
+  pvalues_paired.adjusted = p.adjust(pvalues_paired, method = 'bonferroni')
+  # Top5_Genes.paired = names(pvalues_paired.sorted[c(1:5)])
+
+  # Independent Test:
+  Is_paired = FALSE
+  pvalues_independent = Run_Hypothesis_Test(GE.cancer.clean, GE.healthy.clean, 0.05, Is_paired)
+  pvalues_independent.adjusted = p.adjust(pvalues_independent, method = 'bonferroni')
+  # Top5_Genes.independent = names(p_values_independent.sorted[c(1:5)])
+  
+
+  # 4-Fold change
+  # useful resource: https://bioconductor.org/help/course-materials/2015/Uruguay2015/day5-data_analysis.html
+  # foldchange = data.frame(row.names = rownames(GE.cancer.clean))
+  foldchange = c()
+  for (gene in  names(GE.cancer.clean) )
   {
-    GE_kirc.cancer.clean2 = GE_kirc.cancer.clean2[-skip_patient_index]
-    GE_kirc.healthy.clean2 = GE_kirc.healthy.clean2[-skip_patient_index]
+    ##transform data into log2 base.
+    # GE.cancer.log = log2(GE.cancer.clean[[gene]])
+    # GE.healthy.log = log2(GE.healthy.clean[[gene]])
+    ##calculate the mean for each gene row per group
+    cancer = log2(apply(data.frame(GE.cancer.clean[[gene]]), 1, mean))
+    healthy = log2(apply(data.frame(GE.healthy.clean[[gene]]), 1, mean))
+
+    ##we can take the difference between the means.  And this is our log2 Fold Change or log2 Ratio == log2(control / test)
+    # foldchange[gene, "Mean_log2"] = as.numeric(healthy - cancer)
+    foldchange = append(foldchange, cancer-healthy)
+    #print(foldchange[gene, 1])
   }
-  else
-  {
-    GE_kirc.cancer.clean2 = GE_kirc.cancer.clean2
-    GE_kirc.healthy.clean2 = GE_kirc.healthy.clean2
-  }
+
+  #draw hist for fold change
+  ##note: if "Error in plot.new():figure margins too large" appears solve it by expanding the plotting window
+  x_label = paste("log2 Fold Change (healthy  vs cancer)", cancer_type)
+  log2_FoldChange = foldchange
+  hist(log2_FoldChange, xlab = x_label, main = "Histogran of the Fold Change")
+
+
+  #5-Volcano plot
+  # Paired p_value vs FoldChange:
+  
+  PValue.paired = -log10(as.numeric(pvalues_paired))
+  PValue.paired.FDR = -log10(as.numeric(pvalues_paired.adjusted))
+  PValue.independent = -log10(as.numeric(pvalues_independent))
+  PValue.independent.FDR = -log10(as.numeric(pvalues_independent.adjusted))
   
   
-  #fill list of key value pair gene :samples
-  GE_kirc.cancer.keyVal[[Gene]]<- GE_kirc.cancer.clean2
-  GE_kirc.healthy.keyVal[[Gene]]<- GE_kirc.healthy.clean2
-}
-
-#2- clean Lusc dataframes 
-##Remove the first column from data farmes
-GE_lusc.cancer = GE_lusc.cancer[,-1]
-GE_lusc.healthy=GE_lusc.healthy[,-1]
-
-## Remove the Genes that have more than 50% of its samples as zeros either in healthy or Cancerous tissues.
-## We have 50 patients ==> 50% of patients = 25 ==> If number of zeros in GE level of Healthy or Cancerous data > =25 ==> remove this Gene
-## skip the Gene index if the GE levels for this Gene in Cancerous tissues are more than 50% zeros ==> 25 or more patient
-index_cancer = which(apply(GE_lusc.cancer == 0, 1, sum) >=25)
-## skip the Gene index if the GE levels for this Gene in Healthy tissues are more than 50% zeros ==> 25 or more patient
-index_healthy = which(apply(GE_lusc.healthy == 0, 1, sum) >=25)
-
-## Here are the unique indices for Genes that need to be skipped
-skip_index = unique(c(index_cancer, index_healthy))
-
-## Remove Genes from both Healthy and Cancerous tissues GE levels.
-GE_lusc.cancer.clean = GE_lusc.cancer[-skip_index,]
-GE_lusc.healthy.clean = GE_lusc.healthy[-skip_index,]
-
-# Initialize clean gene list of key value pair 
-GE_lusc.cancer.keyVal <- list()
-GE_lusc.healthy.keyVal<- list()
-for(Gene in rownames(GE_lusc.cancer.clean))
-{
-  GE_lusc.cancer.clean2 = GE_lusc.cancer.clean[Gene,]
-  GE_lusc.healthy.clean2 = GE_lusc.healthy.clean[Gene,]
-  ## index of patients with GE level of healthy tissues = 0
-  patient_index1 = which(GE_lusc.healthy.clean[Gene,]==0)
-  ## index of patients with GE level of Cancerous tissues = 0
-  patient_index2 = which(GE_lusc.cancer.clean[Gene,]==0)
+  data.paired = data.frame(Genes=names(GE.cancer.clean), logFC=log2_FoldChange, PValue=PValue.paired, FDR=PValue.paired.FDR)
+                 
+  data.independent = data.frame(Genes=names(GE.cancer.clean), logFC=log2_FoldChange, PValue=PValue.independent, FDR=PValue.independent.FDR)
   
-  #combine patient_index1, patient_index2 to skip them
-  skip_patient_index = unique(c(patient_index1, patient_index2))
-  if (length(skip_patient_index)!=0)
-  { 
-    GE_lusc.cancer.clean2 = GE_lusc.cancer.clean2[-skip_patient_index]
-    GE_lusc.healthy.clean2 = GE_lusc.healthy.clean2[-skip_patient_index]
-  }
-  else
-  {
-    GE_lusc.cancer.clean2 = GE_lusc.cancer.clean2
-    GE_lusc.healthy.clean2 = GE_lusc.healthy.clean2
-  }
-  #fill list of key value pair gene :samples
-  GE_lusc.cancer.keyVal[[Gene]]<-GE_lusc.cancer.clean2
-  GE_lusc.healthy.keyVal[[Gene]] <-GE_lusc.healthy.clean2
+  ggplot2::ggplot(data=data.independent, ggplot2::aes(x=log2_FoldChange, y=PValue.independent.FDR)) + ggplot2::geom_point(size = 1/5, na.rm = TRUE) + ggplot2::xlim(-4, 4) + ggplot2::ylim(0,20)
+  
+  ggplot2::ggplot(data.paired, ggplot2::aes(log2_FoldChange, PValue.paired.FDR)) + # -log10 conversion  
+    ggplot2::geom_point(size = 2/5, na.rm = TRUE) +
+    ggplot2::xlab("log2_FC") + 
+    ggplot2::ylab("-log10_FDR")  + ggplot2::xlim(-5, 5) + ggplot2::ylim(0, 9) 
+  
+  # Independent p_value vs FoldChange: 
+#  log10_pvalue.independent = -log10(p_values_independent.sorted)
+  
+
+  #6-GSEA
+
+
+  
 }
 
-#3-hypothesis testing on each gene, expected output (pvalues and adjusted pvalues)
-
-
-
-#4-Fold change
-# useful resource: https://bioconductor.org/help/course-materials/2015/Uruguay2015/day5-data_analysis.html
-#A- lusc Data
-GE_lusc.cancer.keyVal.log=list()
-GE_lusc.healthy.keyVal.log=list()
-lusc_foldchange=list()
-for (gene in  names(GE_lusc.cancer.keyVal) )
-{
-  ##transform data into log2 base.
-  GE_lusc.cancer.keyVal.log= log2(GE_lusc.cancer.keyVal[[gene]])
-  GE_lusc.healthy.keyVal.log= log2(GE_lusc.healthy.keyVal[[gene]])
-  ##calculate the mean for each gene row per group
-  cancer = apply(GE_lusc.cancer.keyVal.log, 1, mean)
-  healthy = apply(GE_lusc.healthy.keyVal.log, 1, mean)
-  ##we can take the difference between the means.  And this is our log2 Fold Change or log2 Ratio == log2(control / test)
-  lusc_foldchange<- append(lusc_foldchange, as.numeric(healthy - cancer))
-}
-#B- kirc Data
-GE_kirc.cancer.keyVal.log=list()
-GE_kirc.healthy.keyVal.log=list()
-kirc_foldchange=list()
-for (gene in  names( GE_kirc.healthy.keyVal) )
-{
-  ##transform data into log2 base.
-  GE_kirc.cancer.keyVal.log= log2( GE_kirc.cancer.keyVal[[gene]])
-  GE_kirc.healthy.keyVal.log= log2( GE_kirc.healthy.keyVal[[gene]])
-  ##calculate the mean for each gene row per group
-  cancer = apply( GE_kirc.cancer.keyVal.log, 1, mean)
-  healthy = apply( GE_kirc.healthy.keyVal.log, 1, mean)
-  ##we can take the difference between the means.  And this is our log2 Fold Change or log2 Ratio == log2(control / test)
-  kirc_foldchange<- append(kirc_foldchange, as.numeric(healthy - cancer))
-}
-
-
-#draw hist for fold change
-##note: if "Error in plot.new():figure margins too large" appears solve it by expanding the plotting window
-hist(unlist(lusc_foldchange), xlab = "log2 Fold Change (healthy  vs cancer) lusc")
-hist(unlist(kirc_foldchange), xlab = "log2 Fold Change (healthy  vs cancer) kirc")
-
-
-
-
-#5-Volcano plot
-
-#6-GSEA
 
