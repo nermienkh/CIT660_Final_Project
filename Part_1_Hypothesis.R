@@ -1,10 +1,10 @@
 ## Set the working directory
-setwd("C:/Users/SaraNoeman/Documents/NU_MSC_Informatics/Courses/CIT660_Statistical_Analysis_Visualization/Project/CIT660_Final_Project/")
+setwd("./")
 
 source("Hypothesis_Test_functions.R")
 
-cancer_list = c("kirc", "lusc")
-
+#cancer_list = c("lusc","kirc")
+cancer_list = c("kirc")
 for (cancer_type in cancer_list)
 {
   
@@ -40,21 +40,21 @@ for (cancer_type in cancer_list)
   
   # Paired Test:
   Is_paired = TRUE
-  pvalues_paired = Run_Hypothesis_Test(GE.cancer.clean, GE.healthy.clean, 0.05, Is_paired)
-  # hypothesis.paired.result = Run_Hypothesis_Test(GE.cancer.clean, GE.healthy.clean, 0.05, Is_paired)
-  # pvalues_paired = as.list(hypothesis.paired.result$p_values)
-  # w_statistic_paired = hypothesis.paired.result$w_statistic
-  pvalues_paired.adjusted = p.adjust(pvalues_paired, method = 'fdr')
-  # Top5_Genes.paired = names(pvalues_paired.sorted[c(1:5)])
+  #pvalues_paired = Run_Hypothesis_Test(GE.cancer.clean, GE.healthy.clean, 0.05, Is_paired)
+  Results_Paired_dataframe = Run_Hypothesis_Test(GE.cancer.clean, GE.healthy.clean, 0.05, Is_paired)
+  #sort Dataframe by Statistic
+  Results_Paired_dataframe.sorted=Results_Paired_dataframe[ order( Results_Paired_dataframe$statisticValue, decreasing = TRUE),]
+  #P adjusted moved to   Run_Hypothesis_Test function
+  #pvalues_paired.adjusted = p.adjust(pvalues_paired, method = 'fdr')
+  Top5_Genes.paired = Results_Paired_dataframe.sorted[1:5,]
 
   # Independent Test:
   Is_paired = FALSE
-  pvalues_independent = Run_Hypothesis_Test(GE.cancer.clean, GE.healthy.clean, 0.05, Is_paired)
-  # hypothesis.independent.result = Run_Hypothesis_Test(GE.cancer.clean, GE.healthy.clean, 0.05, Is_paired)
-  # pvalues_independent = hypothesis.independent.result$p_values
-  # w_statistic_independent = hypothesis.independent.result$w_statistic
-  pvalues_independent.adjusted = p.adjust(pvalues_independent, method = 'fdr')
-  # Top5_Genes.independent = names(p_values_independent.sorted[c(1:5)])
+  Results_Independent_dataframe = Run_Hypothesis_Test(GE.cancer.clean, GE.healthy.clean, 0.05, Is_paired)
+
+  Results_Independent_dataframe.sorted=Results_Independent_dataframe[ order( Results_Independent_dataframe$statisticValue, decreasing = TRUE),]
+  
+  Top5_Genes.independent = Results_Independent_dataframe.sorted[1:5,]
   
 
   # 4-Fold change
@@ -73,14 +73,14 @@ for (cancer_type in cancer_list)
     cancer.mean.log2 = log2(apply(data.frame(GE.cancer.clean[[gene]]), 1, mean))
     health.mean.log2 = log2(apply(data.frame(GE.healthy.clean[[gene]]), 1, mean))
     
-    cancer.mean = apply(data.frame(GE.cancer.clean[[gene]]), 1, mean)
-    health.mean = apply(data.frame(GE.healthy.clean[[gene]]), 1, mean)
+    #cancer.mean = apply(data.frame(GE.cancer.clean[[gene]]), 1, mean)
+    #health.mean = apply(data.frame(GE.healthy.clean[[gene]]), 1, mean)
     
     # we can take the difference between the log2 of means.  
     # And this is our log2 Fold Change == log2(condition/normal) = log2(condition) - log2(normal)
     # foldchange for this gene = cancer.mean.log2 - health.mean.log2
     foldchange[gene] = as.numeric(cancer.mean.log2-health.mean.log2)
-    FC[gene] = as.numeric(cancer.mean/health.mean)
+    #FC[gene] = as.numeric(cancer.mean/health.mean)
   }
 
   # Draw hist for fold change
@@ -104,8 +104,8 @@ for (cancer_type in cancer_list)
   # 5-Volcano plot
   # Paired p_value vs FoldChange:
   
-  PValue.paired = -log10(as.numeric(pvalues_paired))
-  PValue.paired.FDR = -log10(as.numeric(pvalues_paired.adjusted))
+  PValue.paired = -log10(Results_Paired_dataframe$pValue)
+  PValue.paired.FDR = -log10(Results_Paired_dataframe$adjPValue)
 
   
   
@@ -171,8 +171,8 @@ for (cancer_type in cancer_list)
   # To close the figure file and save it.
   #dev.off() 
   
-  PValue.independent = -log10(as.numeric(pvalues_independent))
-  PValue.independent.FDR = -log10(as.numeric(pvalues_independent.adjusted))
+  PValue.independent = -log10(Results_Independent_dataframe$pValue)
+  PValue.independent.FDR = -log10(Results_Independent_dataframe$adjPValue)
   data.independent = data.frame(Genes=names(GE.cancer.clean), logFC=log2_FoldChange, PValue=PValue.independent, FDR=PValue.independent.FDR)
 
   ## Let your code determine the y-axis limits automatically 
@@ -229,12 +229,12 @@ for (cancer_type in cancer_list)
   # Report the set of DEGs in the above two pairing cases, and report how different these two sets of genes.
   # 1. Hypothesis testing,
   #    a) Paired Set:
-  pvalues_paired.adjusted.sorted = sort(unlist(pvalues_paired.adjusted), decreasing=FALSE)
-  DEGs.paired = names(which(pvalues_paired.adjusted.sorted<=0.05))
+  pvalues_paired.adjusted.sorted = Results_Paired_dataframe[ order( Results_Paired_dataframe$adjPValue, decreasing = FALSE),]
+  DEGs.paired = Results_Paired_dataframe[(which(pvalues_paired.adjusted.sorted$adjPValue<=0.05)),1]
   
   #    b) Independent Set:
-  pvalues_independent.adjusted.sorted = sort(unlist(pvalues_independent.adjusted), decreasing=FALSE)
-  DEGs.independent = names(which(pvalues_independent.adjusted.sorted<=0.05))  
+  pvalues_independent.adjusted.sorted = Results_Independent_dataframe[ order( Results_Independent_dataframe$adjPValue, decreasing = FALSE),]
+  DEGs.independent = Results_Independent_dataframe[(which(pvalues_independent.adjusted.sorted$adjPValue<=0.05)),1]  
   
   # 2. Fold change:
   # Significant Genes based on Fold Change 
@@ -269,7 +269,7 @@ for (cancer_type in cancer_list)
   Class_label = c(rep(1,length(GE.cancer[DEGs.paired,])), rep(0,length(GE.healthy[DEGs.paired,])))
   cat(Class_label, file = Phenotype.file, sep = " ", append = T)
 
-
+  print("THE end")
   
 
 

@@ -119,9 +119,13 @@ Run_Hypothesis_Test <- function(GE.cancer.keyVal, GE.healthy.keyVal, alpha, Is_p
   normalityCheck_GE=Is_Normal_Distribution(Is_paired ,GE.cancer.keyVal, GE.healthy.keyVal, alpha)
   ## we  will use Wilcoxon signed rank test. Paired = True
   
-  pvalues <- list()
-  w_statistic <- list()
-  hypothesis.result <- data.frame()
+  resultPerGene.dataframe <- data.frame(matrix(ncol = 3, nrow = 0))
+  x <- c("gene", "pValue", "statisticValue")
+  colnames(resultPerGene.dataframe) <- x
+  
+  #pvalues <- list()
+  #w_statistic <- list()
+  
   ## If All Gene data (Cancerous and Healthy) are Normally Distributed
   if(normalityCheck_GE == TRUE)
   {
@@ -129,7 +133,7 @@ Run_Hypothesis_Test <- function(GE.cancer.keyVal, GE.healthy.keyVal, alpha, Is_p
     {
       ## ==> Apply t-test
       result= t.test( unlist(GE.cancer.keyVal[[gene]]),unlist(GE.healthy.keyVal[[gene]]), alternative = 'two.sided', paired = Is_paired)
-      pvalues[gene]=result$p.value
+      resultPerGene.dataframe[nrow(resultPerGene.dataframe) + 1,] = list(gene,result$p.value, result$statistic)
     }
   }
   ## If any of the Gene data (Cancerous and Healthy for independent OR the difference for paired) are Normally Distributed
@@ -142,18 +146,17 @@ Run_Hypothesis_Test <- function(GE.cancer.keyVal, GE.healthy.keyVal, alpha, Is_p
       paste("GE.healthy.keyVal[[",gene,"]] = ", length(GE.healthy.keyVal[[gene]]), "\n\n")
       
       result= wilcox.test( unlist(GE.cancer.keyVal[[gene]]),unlist(GE.healthy.keyVal[[gene]]), alternative = 'two.sided', paired = Is_paired, exact=FALSE)
-      pvalues[gene]=result$p.value
-      w_statistic[gene] = result$statistic
-      # hypothesis.result[gene, "p_values"] = result$p.value
-      # hypothesis.result[gene, "w_statistic"] = result$statistic
+      resultPerGene.dataframe[nrow(resultPerGene.dataframe) + 1,] = list(gene,as.numeric(result$p.value),as.numeric( result$statistic))
+      
+     
+      
     }
   }
-  #sorting pvalues  
-  #pvalues.sorted=sort(unlist(pvalues), decreasing=FALSE)
-  # sorting w_statistic ascendingly (we need the largest Top-5 w_statistic which map to the smallest 5 pvalues)
-  w_statistic.sorted =sort(unlist(w_statistic), decreasing=TRUE)
-  # return (hypothesis.result)
-  return(pvalues)
+ 
+  #adjust pvalues 
+  resultPerGene.dataframe["adjPValue"] = p.adjust(resultPerGene.dataframe$pValue, method = 'fdr')
+ 
+   return(resultPerGene.dataframe)
 }
 
 
