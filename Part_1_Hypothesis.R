@@ -238,7 +238,7 @@ for (cancer_type in cancer_list)
   
   # 2. Fold change:
   # Significant Genes based on Fold Change 
-  DEGs.FC = names(which(c((foldchange>=2),(foldchange<=0.05))))
+  DEGs.FC = names(which(c((foldchange>=log2(2)),(foldchange<=log2(0.05)))))
   
   # 3. Volcano plot using the set of DEGs obtained by the hypothesis that data are paired
   # Significant Genes based on Volcano plot
@@ -255,7 +255,7 @@ for (cancer_type in cancer_list)
   Phenotype.file = paste(cancer_type, "_Phenotype_dataset.paired.cls", sep = "")
   
   ## Concatenate the GE.Cancer data and GE.healthy data for the DEGs of paired hypothesis (DEGs.paired)
-  GSEA.paired = as.data.frame(c(GE.cancer[DEGs.paired,], GE.healthy[DEGs.paired,]), row.names = row.names(GE.cancer[DEGs.paired,]))
+  GSEA.paired = as.data.frame(c(GE.cancer[DEGs.paired,], GE.healthy[DEGs.paired,-1]), row.names = row.names(GE.cancer[DEGs.paired,]))
   GSEA.cols = names(GSEA.paired)
   GSEA.cols[1]="Description"
   names(GSEA.paired) = GSEA.cols
@@ -264,15 +264,13 @@ for (cancer_type in cancer_list)
   write.table(GSEA.paired, file = Expression.file, sep="\t", row.names=T, col.names = F, append = T)
   
   ## Prepare the .cls phenotype file
-  cat(length(GSEA.paired), "2 1\n", file = Phenotype.file, sep = " ")
+  cat(length(GSEA.paired)-1, "2 1\n", file = Phenotype.file, sep = " ")
   cat("# Cancer Healthy\n", file = Phenotype.file, sep = " ", append = T)
-  Class_label = c(rep(1,length(GE.cancer[DEGs.paired,])), rep(0,length(GE.healthy[DEGs.paired,])))
+  Class_label = c(rep(1,length(GE.cancer[DEGs.paired,-1])), rep(0,length(GE.healthy[DEGs.paired,-1])))
   cat(Class_label, file = Phenotype.file, sep = " ", append = T)
 
   print("THE end")
   
 
-
-  
 }
 
