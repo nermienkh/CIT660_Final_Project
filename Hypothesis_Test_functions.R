@@ -119,7 +119,9 @@ Run_Hypothesis_Test <- function(GE.cancer.keyVal, GE.healthy.keyVal, alpha, Is_p
   normalityCheck_GE=Is_Normal_Distribution(Is_paired ,GE.cancer.keyVal, GE.healthy.keyVal, alpha)
   ## we  will use Wilcoxon signed rank test. Paired = True
   
-  pvalues=list()
+  pvalues <- list()
+  w_statistic <- list()
+  hypothesis.result <- data.frame()
   ## If All Gene data (Cancerous and Healthy) are Normally Distributed
   if(normalityCheck_GE == TRUE)
   {
@@ -139,11 +141,19 @@ Run_Hypothesis_Test <- function(GE.cancer.keyVal, GE.healthy.keyVal, alpha, Is_p
       paste("GE.cancer.keyVal[[",gene,"]] = ", length(GE.cancer.keyVal[[gene]]), "\n")
       paste("GE.healthy.keyVal[[",gene,"]] = ", length(GE.healthy.keyVal[[gene]]), "\n\n")
       
-      result= wilcox.test( unlist(GE.cancer.keyVal[[gene]]),unlist(GE.healthy.keyVal[[gene]]), alternative = 'two.sided', paired = Is_paired)
+      result= wilcox.test( unlist(GE.cancer.keyVal[[gene]]),unlist(GE.healthy.keyVal[[gene]]), alternative = 'two.sided', paired = Is_paired, exact=FALSE)
       pvalues[gene]=result$p.value
+      w_statistic[gene] = result$statistic
+      # hypothesis.result[gene, "p_values"] = result$p.value
+      # hypothesis.result[gene, "w_statistic"] = result$statistic
     }
   }
   #sorting pvalues  
   #pvalues.sorted=sort(unlist(pvalues), decreasing=FALSE)
-  return (pvalues)
+  # sorting w_statistic ascendingly (we need the largest Top-5 w_statistic which map to the smallest 5 pvalues)
+  w_statistic.sorted =sort(unlist(w_statistic), decreasing=TRUE)
+  # return (hypothesis.result)
+  return(pvalues)
 }
+
+
