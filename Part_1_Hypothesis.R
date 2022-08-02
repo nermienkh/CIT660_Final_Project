@@ -269,7 +269,12 @@ for (cancer_type in cancer_list)
   Class_label = c(rep(1,length(GE.cancer[DEGs.paired,-1])), rep(0,length(GE.healthy[DEGs.paired,-1])))
   cat(Class_label, file = Phenotype.file, sep = " ", append = T)
 
-  print("THE end")
+  print("THE end of part 1")
+  
+  
+  #Top5_Genes.paired$gene
+  #Top5_Genes.independent$gene
+  
   
 
 }
