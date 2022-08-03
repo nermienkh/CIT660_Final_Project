@@ -1,6 +1,6 @@
 ## Set the working directory
-#setwd("./")
-setwd("C:/Users/SaraNoeman/Documents/NU_MSC_Informatics/Courses/CIT660_Statistical_Analysis_Visualization/Project/CIT660_Final_Project/")
+setwd("./")
+#setwd("C:/Users/SaraNoeman/Documents/NU_MSC_Informatics/Courses/CIT660_Statistical_Analysis_Visualization/Project/CIT660_Final_Project/")
 
 source("Hypothesis_Test_functions.R")
 
@@ -239,6 +239,12 @@ for (cancer_type in cancer_list)
   # 3. Volcano plot using the set of DEGs obtained by the hypothesis that data are paired
   # Significant Genes based on Volcano plot
   DEGs.volcano.paired = data.paired[which(data.paired$gene_type==c("up", "down")),]$Genes
+  
+  
+  
+  report.df=data.frame (nrow(GE.cancer), length(GE.cancer.clean),length( DEGs.independent), length(DEGs.paired), length(DEGs.FC), length(DEGs.volcano.paired) )
+  names(report.df)=c("Total.Genes","Genes.After.Cleansing","DEGs.Independent","DEGS.Paired", "DEGS.LOG2FoldChange","DEGS.Volcano.paired")
+  write.csv(report.df, file = paste(cancer_type,"_Report_DEGS.csv" ), row.names = FALSE)
   
   # 4. Top-5 significant Genes
   # Paired DEGs:
