@@ -1,0 +1,20 @@
+Equation for gene ( SERPINH1 ):
+ 6139.87 + -9485.99*xCNV_17p + -3322.56*xCNV_8p 
+ 
+
+Equation for gene ( DAGLB ):
+ 276.38 + 172.14*xCNV_12p + -92.52*xCNV_14q31.1 + 288.14*xCNV_15q + 112.3*xCNV_8p 
+ 
+
+Equation for gene ( TMEM133 ):
+ 225.42 + -309.67*xCNV_16p + 210.82*xCNV_18q + -200.04*xCNV_8q24.22 + -321.99*xCNV_3p25.3 
+ 
+
+Equation for gene ( FRMD8 ):
+ 620.81 + -137.86*xCNV_5p + 183.96*xCNV_18q 
+ 
+
+Equation for gene ( SND1 ):
+ 2367.71 + -1021.57*xCNV_10q + 1260.61*xCNV_16p + -1236.02*xCNV_18q + -889.75*xCNV_9p21.3 
+ 
+

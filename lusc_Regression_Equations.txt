@@ -1,0 +1,20 @@
+Equation for gene ( WDR53 ):
+ 533.69 
+ 
+
+Equation for gene ( FGF11 ):
+ 387.34 
+ 
+
+Equation for gene ( TOMM70A ):
+ 784.21 
+ 
+
+Equation for gene ( FBXO45 ):
+  
+ 
+
+Equation for gene ( GTF2IRD1 ):
+ 944.01 
+ 
+

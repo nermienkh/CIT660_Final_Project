@@ -1,10 +1,19 @@
 ## Set the working directory
-setwd("./")
+#setwd("./")
+setwd("C:/Users/SaraNoeman/Documents/NU_MSC_Informatics/Courses/CIT660_Statistical_Analysis_Visualization/Project/CIT660_Final_Project_2022_08_03/CIT660_Final_Project/")
 
-source("Hypothesis_Test_functions.R")
+
+source("hypothesis.R")
+source("regression.R")
+
+# Threshold for the Hypothesis test
+alpha = 0.05
+
+# Threshold of the FC = 2 ==> Then log2_FC_threshold = log2(2) = 1 
+log2_FC_threshold = log2(2)
 
 cancer_list = c("lusc","kirc")
-# cancer_list = c("lusc")
+#cancer_list = c("kirc")
 for (cancer_type in cancer_list)
 {
   
@@ -41,8 +50,7 @@ for (cancer_type in cancer_list)
   
   # Paired Test:
   Is_paired = TRUE
-  #pvalues_paired = Run_Hypothesis_Test(GE.cancer.clean, GE.healthy.clean, 0.05, Is_paired)
-  Results_Paired_dataframe = Run_Hypothesis_Test(GE.cancer.clean, GE.healthy.clean, 0.05, Is_paired)
+  Results_Paired_dataframe = Run_Hypothesis_Test(GE.cancer.clean, GE.healthy.clean, alpha, Is_paired)
   #sort Dataframe by Statistic
   Results_Paired_dataframe.sorted=Results_Paired_dataframe[ order( Results_Paired_dataframe$statisticValue, decreasing = TRUE),]
   #P adjusted moved to   Run_Hypothesis_Test function
@@ -51,7 +59,7 @@ for (cancer_type in cancer_list)
   
   # Independent Test:
   Is_paired = FALSE
-  Results_Independent_dataframe = Run_Hypothesis_Test(GE.cancer.clean, GE.healthy.clean, 0.05, Is_paired)
+  Results_Independent_dataframe = Run_Hypothesis_Test(GE.cancer.clean, GE.healthy.clean, alpha, Is_paired)
   
   Results_Independent_dataframe.sorted=Results_Independent_dataframe[ order( Results_Independent_dataframe$statisticValue, decreasing = TRUE),]
   
@@ -113,35 +121,26 @@ for (cancer_type in cancer_list)
   data.paired = data.frame(Genes=names(GE.cancer.clean), logFC=log2_FoldChange, PValue=PValue.paired, FDR=PValue.paired.FDR)
   
   ## The path of the png file that we will save the plot.
-  #path.name = paste(cancer_type, "_Volcano_plot.png")
-  #png(path.name, width = 2000, height = 1500, res=200) # To save the figure in the PNG format.
-  
+
   ## Let your code determine the y-axis limits automatically 
   # y.min = floor(min(PValue.paired.FDR) - 1)
   # y.max = ceiling(max(PValue.paired.FDR) + 1)
   x.min = floor(min(log2_FoldChange))
   x.max = ceiling(max(log2_FoldChange))
   
-  # ggplot2::ggplot(data.paired, ggplot2::aes(log2_FoldChange, PValue.paired.FDR))+ 
-  #   ggplot2::geom_point(size = 2/5, na.rm = TRUE) +
-  #   ggplot2::xlab("log2_FC (Fold Change)") +
-  #   ggplot2::ylab("-log10_FDR")  + 
-  #   ggplot2::xlim(-5, 5) +
-  #   ggplot2::ylim(y.min, y.max) 
-  
-  
   ###################################################################################
   # Create new categorical column ------------------------------------------------ 
-  data.paired = dplyr::mutate(data.paired, gene_type = dplyr::case_when(log2_FoldChange >= log2(2) & PValue.paired.FDR >= -log10(0.05) ~ "up",
-                                                                        log2_FoldChange <= log2(0.5) & PValue.paired.FDR >= -log10(0.05) ~ "down",
+  data.paired = dplyr::mutate(data.paired, gene_type = dplyr::case_when(log2_FoldChange >= log2_FC_threshold & PValue.paired.FDR >= -log10(alpha) ~ "up",
+                                                                        log2_FoldChange <= -log2_FC_threshold & PValue.paired.FDR >= -log10(alpha) ~ "down",
                                                                         TRUE ~ "ns"))   
-  # Obtain gene_type counts ------------------------------------------------------           
-  #dplyr::count(x = data.paired, Genes)
-  
+
   # Add colour, size and alpha (transparency) to volcano plot --------------------
   cols <- c("up" = "#ffad73", "down" = "#26b3ff", "ns" = "grey") 
   sizes <- c("up" = 2, "down" = 2, "ns" = 1) 
   alphas <- c("up" = 1, "down" = 1, "ns" = 0.5)
+  
+  # Add title to volcano plot --------------------
+  title = paste("Volcano Plot for", cancer_type, "(Paired)" , sep = " ")
   
   p1 <- ggplot2::ggplot(data.paired, ggplot2::aes(x = log2_FoldChange,
                                                   y = PValue.paired.FDR,
@@ -150,15 +149,18 @@ for (cancer_type in cancer_list)
                                                   alpha = gene_type)) + 
     ggplot2::geom_point(shape = 21, # Specify shape and colour as fixed local parameters    
                         colour = "black") + 
-    ggplot2::geom_hline(yintercept = -log10(0.05),
+    ggplot2::geom_hline(yintercept = -log10(alpha),
                         linetype = "dashed") + 
-    ggplot2::geom_vline(xintercept = c(log2(0.5), log2(2)),
+    ggplot2::geom_vline(xintercept = c(-log2_FC_threshold, log2_FC_threshold),
                         linetype = "dashed") +
     ggplot2::scale_fill_manual(values = cols) + # Modify point colour
     ggplot2::scale_size_manual(values = sizes) + # Modify point size
     ggplot2::scale_alpha_manual(values = alphas) + # Modify point transparency
     ggplot2::scale_x_continuous(breaks = c(seq(-7, 7, 2)),       
-                                limits = c(x.min, x.max)) 
+                                limits = c(x.min, x.max)) +
+    ggplot2::ggtitle(title) +                     # Add title to volcano plot
+    ggplot2::xlab("log2(Fold Change)") +          # Add x-label to volcano plot
+    ggplot2::ylab("-log10(adj.p-value)")         # Add y-label to volcano plot
   ###################################################################################
   volcano_plot.file = paste(cancer_type, "_paired_Volcano_plot.png", sep = "")
   ggplot2::ggsave(volcano_plot.file, plot = p1, 
@@ -169,9 +171,6 @@ for (cancer_type in cancer_list)
                   dpi = 300,
                   limitsize = TRUE)
   
-  # To close the figure file and save it.
-  #dev.off() 
-  
   PValue.independent = -log10(Results_Independent_dataframe$pValue)
   PValue.independent.FDR = -log10(Results_Independent_dataframe$adjPValue)
   data.independent = data.frame(Genes=names(GE.cancer.clean), logFC=log2_FoldChange, PValue=PValue.independent, FDR=PValue.independent.FDR)
@@ -180,18 +179,14 @@ for (cancer_type in cancer_list)
   # y.min = floor(min(PValue.independent.FDR)-0.5)
   # y.max = ceiling(max(PValue.independent.FDR)+2)
   
-  # ggplot2::ggplot(data=data.independent, ggplot2::aes(x=as.numeric(log2_FoldChange), y=PValue.independent.FDR)) +
-  # ggplot2::geom_point(size = 1/5, na.rm = TRUE) +
-  # ggplot2::xlab("log2_FC (Fold Change)") +
-  # ggplot2::ylab("-log10_FDR") +
-  # ggplot2::xlim(x.min, x.max) +
-  # ggplot2::ylim(y.min,y.max)
   
   ###################################################################################
   # Create new categorical column ------------------------------------------------ 
-  data.independent = dplyr::mutate(data.independent, gene_type = dplyr::case_when(log2_FoldChange >= log2(2) & PValue.independent.FDR >= -log10(0.05) ~ "up",
-                                                                                  log2_FoldChange <= log2(0.5) & PValue.independent.FDR >= -log10(0.05) ~ "down",
-                                                                                  TRUE ~ "ns"))   
+  data.independent = dplyr::mutate(data.independent, gene_type = dplyr::case_when(log2_FoldChange >= log2_FC_threshold & PValue.independent.FDR >= -log10(alpha) ~ "up",
+                                                                                  log2_FoldChange <= -log2_FC_threshold & PValue.independent.FDR >= -log10(alpha) ~ "down",
+                                                                                  TRUE ~ "ns"))  
+  # Add title to volcano plot --------------------
+  title = paste("Volcano Plot for", cancer_type, "(Independent)" , sep = " ")
   
   p2 <- ggplot2::ggplot(data.independent, ggplot2::aes(x = log2_FoldChange,
                                                        y = PValue.independent.FDR,
@@ -200,15 +195,18 @@ for (cancer_type in cancer_list)
                                                        alpha = gene_type)) + 
     ggplot2::geom_point(shape = 21, # Specify shape and colour as fixed local parameters    
                         colour = "black") + 
-    ggplot2::geom_hline(yintercept = -log10(0.05),
+    ggplot2::geom_hline(yintercept = -log10(alpha),
                         linetype = "dashed") + 
-    ggplot2::geom_vline(xintercept = c(log2(0.5), log2(2)),
+    ggplot2::geom_vline(xintercept = c(-log2_FC_threshold, log2_FC_threshold),
                         linetype = "dashed") +
     ggplot2::scale_fill_manual(values = cols) + # Modify point colour
     ggplot2::scale_size_manual(values = sizes) + # Modify point size
     ggplot2::scale_alpha_manual(values = alphas) + # Modify point transparency
     ggplot2::scale_x_continuous(breaks = c(seq(-10, 10, 2)),       
-                                limits = c(x.min, x.max)) 
+                                limits = c(x.min, x.max)) +
+    ggplot2::ggtitle(title) +                     # Add title to volcano plot
+    ggplot2::xlab("log2(Fold Change)") +          # Add x-label to volcano plot
+    ggplot2::ylab("-log10(adj.p-value)")         # Add y-label to volcano plot
   ###################################################################################
   
   volcano_plot.file = paste(cancer_type, "_independent_Volcano_plot.png", sep = "")
@@ -231,19 +229,24 @@ for (cancer_type in cancer_list)
   # 1. Hypothesis testing,
   #    a) Paired Set:
   pvalues_paired.adjusted.sorted = Results_Paired_dataframe[ order( Results_Paired_dataframe$adjPValue, decreasing = FALSE),]
-  DEGs.paired = Results_Paired_dataframe[(which(pvalues_paired.adjusted.sorted$adjPValue<=0.05)),1]
+  DEGs.paired = Results_Paired_dataframe[(which(pvalues_paired.adjusted.sorted$adjPValue<=alpha)),1]
   
   #    b) Independent Set:
   pvalues_independent.adjusted.sorted = Results_Independent_dataframe[ order( Results_Independent_dataframe$adjPValue, decreasing = FALSE),]
-  DEGs.independent = Results_Independent_dataframe[(which(pvalues_independent.adjusted.sorted$adjPValue<=0.05)),1]  
+  DEGs.independent = Results_Independent_dataframe[(which(pvalues_independent.adjusted.sorted$adjPValue<=alpha)),1]  
   
   # 2. Fold change:
   # Significant Genes based on Fold Change 
-  DEGs.FC = names(which(c((foldchange>=log2(2)),(foldchange<=log2(0.05)))))
+  DEGs.FC = names(which(c((foldchange>=log2_FC_threshold),(foldchange<=-log2_FC_threshold))))
   
   # 3. Volcano plot using the set of DEGs obtained by the hypothesis that data are paired
   # Significant Genes based on Volcano plot
   DEGs.volcano.paired = data.paired[which(data.paired$gene_type==c("up", "down")),]$Genes
+  
+  
+  report.df=data.frame (nrow(GE.cancer), length(GE.cancer.clean),length( DEGs.independent), length(DEGs.paired), length(DEGs.FC), length(DEGs.volcano.paired) )
+  names(report.df)=c("Total.Genes","Genes.After.Cleansing","DEGs.Independent","DEGS.Paired", "DEGS.LOG2FoldChange","DEGS.Volcano.paired")
+  write.csv(report.df, file = paste(cancer_type,"_Report_DEGS.csv" ), row.names = FALSE)
   
   # 4. Top-5 significant Genes
   # Paired DEGs:
@@ -282,7 +285,38 @@ for (cancer_type in cancer_list)
   for (gene in gene_names){
     gene_cancer_profile = GE.cancer.clean[[gene]]
     gene_CNA = extract_gene_CNA_df(gene_cancer_profile, CNA)
-    gene_CNA_regression(gene_CNA$df ,gene_CNA$y )
+    regression_result = gene_CNA_regression(gene_CNA$df ,gene_CNA$y )
+    
+    ## index of significant CNAs whose pvalue < 0.05
+    significant_CNAs_index = which(regression_result$coefficients[,4]<0.05)
+    equation = ""
+    is_empty = TRUE
+    for(index in significant_CNAs_index)
+    {
+      coef = round(regression_result$coefficients[index,1], digits = 2)
+      CNA_name = row.names(regression_result$coefficients)[index]
+
+      if(is_empty==TRUE)
+      {
+        if(CNA_name == "(Intercept)")
+        {
+          equation = coef
+        }
+        else
+        {
+          equation = paste(coef, "*", CNA_name, sep = "")
+        }
+        is_empty = FALSE
+      }
+      else
+      {
+        equation = paste(equation, " + ", coef, "*", CNA_name, sep = "")
+      }
+    }
+    ## Print the Gene ~ CNA Linear Regression equation of gene
+    file_name = paste(cancer_type, "_Regression_Equations.txt", sep = "")
+    cat("Equation for gene (", gene, "):\n", equation, "\n", file = file_name, "\n\n", append = T)
+    
   }
   
 }

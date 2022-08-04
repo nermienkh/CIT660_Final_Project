@@ -40,7 +40,7 @@ extract_gene_CNA_df <- function (gene_cancer_profile, CNA_data){
 gene_CNA_regression <- function(gene_CNA_df , gene_name ){
   
   # extract the CNA columns as a matrix
-  x <- data.matrix(gene_CNA$df[,-1])
+  x <- data.matrix(gene_CNA_df[,-1])
 
   # get the vectors of y
   y <- gene_CNA_df[[gene_name]]
@@ -50,7 +50,7 @@ gene_CNA_regression <- function(gene_CNA_df , gene_name ){
   cat("number of rows of features : ", nrow(x) , "\n")
   cat("number of rows of target : ", length(y) , "\n")
   
-  
+  S = list()
   if (ncol(x) >= length(y)) {
         
       # use a feature selection technique to penalize features: using LASSO
@@ -76,8 +76,10 @@ gene_CNA_regression <- function(gene_CNA_df , gene_name ){
       
       
       features.in <- which(abs(coef.fit) > 0 )
-      print(features.in)
-      print(length(features.in))
+      cat("After feature selection:\n")
+      cat("Number of features selected = ", length(features.in), "\n")
+      cat("The index of features selected:", features.in, "\n")
+      cat("The name of CNA predictors/features selected: \n", colnames(gene_CNA_df[,-1][features.in]))
       
       if (length(features.in) > 0 ) {
         x = x[, features.in]
@@ -95,5 +97,6 @@ gene_CNA_regression <- function(gene_CNA_df , gene_name ){
     S = summary(relation)
     print(S)
   }
+  return(S)
  
 }
